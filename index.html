@@ -1,1 +1,193 @@
 
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Vendas - Bar</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f4f4;
+        margin: 0;
+        padding: 0;
+    }
+    header {
+        background: #2c3e50;
+        color: white;
+        padding: 15px;
+        text-align: center;
+    }
+    main {
+        max-width: 900px;
+        margin: auto;
+        padding: 20px;
+        background: white;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+        border-bottom: 2px solid #ccc;
+        padding-bottom: 5px;
+    }
+    form {
+        margin-bottom: 20px;
+    }
+    input, button {
+        padding: 8px;
+        margin: 5px 0;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+    th, td {
+        border: 1px solid #ccc;
+        padding: 8px;
+        text-align: center;
+    }
+    th {
+        background: #3498db;
+        color: white;
+    }
+    .total {
+        font-weight: bold;
+        font-size: 1.2em;
+        text-align: right;
+        margin-top: 10px;
+    }
+    .btn-danger {
+        background: red;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        cursor: pointer;
+    }
+</style>
+</head>
+<body>
+
+<header>
+    <h1>Controle de Vendas - Bar</h1>
+</header>
+
+<main>
+    <section>
+        <h2>Cadastrar Produto</h2>
+        <form id="formProduto">
+            <input type="text" id="nomeProduto" placeholder="Nome do produto" required>
+            <input type="number" id="precoProduto" placeholder="Preço (R$)" step="0.01" required>
+            <button type="submit">Adicionar Produto</button>
+        </form>
+    </section>
+
+    <section>
+        <h2>Registrar Venda</h2>
+        <form id="formVenda">
+            <select id="produtoVenda" required></select>
+            <input type="number" id="quantidadeVenda" placeholder="Quantidade" min="1" required>
+            <button type="submit">Adicionar Venda</button>
+        </form>
+    </section>
+
+    <section>
+        <h2>Histórico de Vendas</h2>
+        <table id="tabelaVendas">
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Preço Unitário (R$)</th>
+                    <th>Quantidade</th>
+                    <th>Total (R$)</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <div class="total" id="totalVendas">Total: R$ 0,00</div>
+    </section>
+</main>
+
+<script>
+    // Recupera dados salvos
+    let produtos = JSON.parse(localStorage.getItem("produtos")) || [];
+    let vendas = JSON.parse(localStorage.getItem("vendas")) || [];
+
+    const formProduto = document.getElementById("formProduto");
+    const formVenda = document.getElementById("formVenda");
+    const produtoVenda = document.getElementById("produtoVenda");
+    const tabelaVendas = document.querySelector("#tabelaVendas tbody");
+    const totalVendas = document.getElementById("totalVendas");
+
+    // Atualiza lista de produtos no select
+    function atualizarSelectProdutos() {
+        produtoVenda.innerHTML = "";
+        produtos.forEach((p, index) => {
+            let option = document.createElement("option");
+            option.value = index;
+            option.textContent = `${p.nome} - R$ ${p.preco.toFixed(2)}`;
+            produtoVenda.appendChild(option);
+        });
+    }
+
+    // Atualiza tabela de vendas
+    function atualizarTabelaVendas() {
+        tabelaVendas.innerHTML = "";
+        let total = 0;
+        vendas.forEach((v, index) => {
+            let tr = document.createElement("tr");
+            let subtotal = v.preco * v.quantidade;
+            total += subtotal;
+
+            tr.innerHTML = `
+                <td>${v.nome}</td>
+                <td>R$ ${v.preco.toFixed(2)}</td>
+                <td>${v.quantidade}</td>
+                <td>R$ ${subtotal.toFixed(2)}</td>
+                <td><button class="btn-danger" onclick="removerVenda(${index})">Excluir</button></td>
+            `;
+            tabelaVendas.appendChild(tr);
+        });
+        totalVendas.textContent = `Total: R$ ${total.toFixed(2)}`;
+        localStorage.setItem("vendas", JSON.stringify(vendas));
+    }
+
+    // Adiciona produto
+    formProduto.addEventListener("submit", e => {
+        e.preventDefault();
+        let nome = document.getElementById("nomeProduto").value.trim();
+        let preco = parseFloat(document.getElementById("precoProduto").value);
+        if (nome && preco > 0) {
+            produtos.push({ nome, preco });
+            localStorage.setItem("produtos", JSON.stringify(produtos));
+            atualizarSelectProdutos();
+            formProduto.reset();
+        }
+    });
+
+    // Adiciona venda
+    formVenda.addEventListener("submit", e => {
+        e.preventDefault();
+        let indexProduto = parseInt(produtoVenda.value);
+        let quantidade = parseInt(document.getElementById("quantidadeVenda").value);
+        if (!isNaN(indexProduto) && quantidade > 0) {
+            let produto = produtos[indexProduto];
+            vendas.push({ nome: produto.nome, preco: produto.preco, quantidade });
+            atualizarTabelaVendas();
+            formVenda.reset();
+        }
+    });
+
+    // Remove venda
+    function removerVenda(index) {
+        vendas.splice(index, 1);
+        atualizarTabelaVendas();
+    }
+
+    // Inicializa
+    atualizarSelectProdutos();
+    atualizarTabelaVendas();
+</script>
+
+</body>
+</html>
